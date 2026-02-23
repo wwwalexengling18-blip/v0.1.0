@@ -22,10 +22,7 @@ jobs:
           pip install -e A380_AI_Crew_GateToGate
 
       - name: Build EXE
-        run: |
-          pyinstaller --onefile --noconsole ^
-            -p A380_AI_Crew_GateToGate/src ^
-            A380_AI_Crew_GateToGate/src/a380_ai_crew/control_center.py
+  run: pyinstaller --onefile --noconsole -p "A380_AI_Crew_GateToGate/src" "A380_AI_Crew_GateToGate/src/a380_ai_crew/control_center.py"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
