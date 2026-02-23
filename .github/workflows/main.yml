@@ -17,10 +17,9 @@ jobs:
           python-version: "3.12"
 
       - name: Install deps
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller
-          pip install -e A380_AI_Crew_GateToGate
+  run: |
+    python -m pip install --upgrade pip
+    pip install pyinstaller
 
       - name: Build Commander EXE
         run: pyinstaller --noconfirm --clean --onefile --noconsole --name A380_AI_Crew_Commander -p "A380_AI_Crew_GateToGate/src" "A380_AI_Crew_GateToGate/src/a380_ai_crew/control_center.py"
