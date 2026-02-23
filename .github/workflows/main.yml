@@ -1,0 +1,41 @@
+name: Build A380 AI Crew Commander (EXE + Setup)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -e A380_AI_Crew_GateToGate
+
+      - name: Build Commander EXE (PyInstaller)
+        run: pyinstaller --noconfirm --clean --onefile --noconsole --name A380_AI_Crew_Commander --hidden-import=clr -p "A380_AI_Crew_GateToGate/src" "A380_AI_Crew_GateToGate/src/a380_ai_crew/control_center.py"
+
+      - name: Install Inno Setup (Chocolatey)
+        run: choco install innosetup -y
+
+      - name: Build Setup.exe (Inno Setup)
+        working-directory: A380_AI_Crew_GateToGate
+        run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" ".\installer_setup\A380_AI_Crew.iss"'
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: A380_AI_Crew_Build
+          path: |
+            dist/*.exe
+            A380_AI_Crew_GateToGate/installer_setup/Output/*.exe
