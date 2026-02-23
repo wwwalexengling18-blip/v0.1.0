@@ -1,0 +1,30 @@
+version: 1
+name: "Cold & Dark Only"
+description: "Stabiler Einstieg: nur Preset Cold & Dark + Techniker-Log."
+defaults:
+  tick_hz: 5.0
+  retry: 2
+  timeout_s: 45
+
+phases:
+  - id: cold_dark
+    title: "Cold & Dark"
+    steps:
+      - id: ensure_connected
+        role: SYSTEM
+        kind: ensure_connected
+        note: "SimConnect/WASim Verbindung prüfen"
+
+      - id: preset_cold_dark
+        role: PM
+        kind: load_preset
+        preset_id: 1
+        wait_progress: true
+        min_wait_s: 12
+        note: "Preset 1 = Cold & Dark. Warten bis Progress 1.0 + Settling"
+
+      - id: tech_walkaround
+        role: TECH
+        kind: tech_walkaround
+        min_wait_s: 20
+        note: "Techniker-Check (simuliert + SimVars)."

@@ -1,0 +1,117 @@
+version: 1
+name: "Gate-to-Gate FULL Skeleton"
+description: "Kompletter Ablauf als Gerüst. Fülle pro Phase die Steps mit echten Actions/Checks."
+defaults:
+  tick_hz: 5.0
+  retry: 2
+  timeout_s: 60
+
+phases:
+  - id: cold_dark
+    title: "Cold & Dark"
+    steps:
+      - id: ensure_connected
+        role: SYSTEM
+        kind: ensure_connected
+        note: "SimConnect/WASim Verbindung prüfen"
+      - id: preset_cold_dark
+        role: PM
+        kind: load_preset
+        preset_id: 1
+        wait_progress: true
+        min_wait_s: 12
+        note: "Preset Cold & Dark"
+      - id: tech_walkaround
+        role: TECH
+        kind: tech_walkaround
+        min_wait_s: 20
+        note: "Techniker-Check + Log"
+
+  - id: turnaround_preflight
+    title: "Turnaround / Preflight"
+    steps:
+      - id: preflight_pause
+        role: PM
+        kind: sleep
+        seconds: 10
+        note: "Beispiel-Delay (Boarding / Setup)"
+
+  - id: cockpit_preparation
+    title: "Cockpit Preparation"
+    steps:
+      - id: cockpit_prep_pause
+        role: PF
+        kind: sleep
+        seconds: 10
+        note: "Hier kommen SOP-Checks rein (YAML Steps)"
+
+  - id: pushback_startup
+    title: "Pushback & Engine Start"
+    steps:
+      - id: pushback_pause
+        role: PM
+        kind: sleep
+        seconds: 10
+        note: "Pushback/Start-Sequenz (placeholder)"
+
+  - id: taxi_out
+    title: "Taxi Out"
+    steps:
+      - id: taxi_out_pause
+        role: PF
+        kind: sleep
+        seconds: 10
+        note: "Taxi Logic (placeholder)"
+
+  - id: takeoff
+    title: "Takeoff"
+    steps:
+      - id: takeoff_pause
+        role: PF
+        kind: sleep
+        seconds: 8
+        note: "Takeoff (placeholder)"
+
+  - id: climb_cruise
+    title: "Climb & Cruise"
+    steps:
+      - id: cruise_pause
+        role: PF
+        kind: sleep
+        seconds: 8
+        note: "Cruise Monitoring (placeholder)"
+
+  - id: descent_approach
+    title: "Descent & Approach"
+    steps:
+      - id: approach_pause
+        role: PF
+        kind: sleep
+        seconds: 8
+        note: "Approach setup (placeholder)"
+
+  - id: landing
+    title: "Landing"
+    steps:
+      - id: landing_pause
+        role: PF
+        kind: sleep
+        seconds: 8
+        note: "Landing (placeholder)"
+
+  - id: taxi_in_shutdown
+    title: "Taxi In & Shutdown"
+    steps:
+      - id: shutdown_pause
+        role: PM
+        kind: sleep
+        seconds: 10
+        note: "Shutdown + Postflight (placeholder)"
+
+  - id: end
+    title: "Ende"
+    steps:
+      - id: finish
+        role: SYSTEM
+        kind: finish
+        note: "Fertig ✅"
