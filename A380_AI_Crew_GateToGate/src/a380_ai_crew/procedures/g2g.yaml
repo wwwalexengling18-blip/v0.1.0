@@ -1,0 +1,139 @@
+name: "Cold & Dark → Ready Takeoff (realistische Ladezeiten)"
+steps:
+  - id: "precheck_on_ground"
+    when:
+      all:
+        - simvar: "SIM ON GROUND"
+          op: "=="
+          value: 1
+    do:
+      - type: log
+        msg: "Precheck: on ground ✅"
+      - type: sleep
+        sec: 0.5
+
+  - id: "preset_cold_dark"
+    when: {}
+    do:
+      - type: log
+        msg: "Preset 1: Cold & Dark (ohne Expedite)"
+      - type: preset_load
+        preset: 1
+        expedite: 0
+      - type: wait_lvar
+        name: "A32NX_LOAD_AIRCRAFT_PRESET_PROGRESS"
+        op: ">="
+        value: 1.0
+        timeout: 240
+        min_wait: 12
+      - type: sleep_range
+        min: 3
+        max: 7
+      - type: log
+        msg: "Cold & Dark geladen ✅"
+
+  - id: "preset_powered"
+    when: {}
+    do:
+      - type: log
+        msg: "Preset 2: Powered (ohne Expedite)"
+      - type: preset_load
+        preset: 2
+        expedite: 0
+      - type: wait_lvar
+        name: "A32NX_LOAD_AIRCRAFT_PRESET_PROGRESS"
+        op: ">="
+        value: 1.0
+        timeout: 240
+        min_wait: 10
+      - type: sleep_range
+        min: 4
+        max: 9
+      - type: log
+        msg: "Powered ✅"
+
+  - id: "preset_ready_push"
+    when: {}
+    do:
+      - type: log
+        msg: "Preset 3: Ready for Pushback"
+      - type: preset_load
+        preset: 3
+        expedite: 0
+      - type: wait_lvar
+        name: "A32NX_LOAD_AIRCRAFT_PRESET_PROGRESS"
+        op: ">="
+        value: 1.0
+        timeout: 240
+        min_wait: 8
+      - type: input_event
+        name: "BEACON_LIGHTS_ON"
+        mode: raw
+      - type: log
+        msg: "Before Push: Beacon ON ✅"
+
+  - id: "pushback_mvp"
+    when: {}
+    do:
+      - type: log
+        msg: "Pushback MVP: 20s rückwärts (kein GSX)"
+      - type: lvar_set
+        name: "A32NX_PUSHBACK_SYSTEM_ENABLED"
+        value: 1
+      - type: lvar_set
+        name: "A32NX_PUSHBACK_SPD_FACTOR"
+        value: -0.5
+      - type: lvar_set
+        name: "A32NX_PUSHBACK_HDG_FACTOR"
+        value: 0.0
+      - type: sleep
+        sec: 20
+      - type: lvar_set
+        name: "A32NX_PUSHBACK_SPD_FACTOR"
+        value: 0.0
+      - type: log
+        msg: "Pushback fertig ✅"
+
+  - id: "preset_ready_taxi"
+    when: {}
+    do:
+      - type: log
+        msg: "Preset 4: Ready for Taxi"
+      - type: preset_load
+        preset: 4
+        expedite: 0
+      - type: wait_lvar
+        name: "A32NX_LOAD_AIRCRAFT_PRESET_PROGRESS"
+        op: ">="
+        value: 1.0
+        timeout: 240
+        min_wait: 6
+      - type: log
+        msg: "Taxi ready ✅ (Taxi-Controller folgt als nächster Ausbau)"
+
+  - id: "preset_ready_takeoff"
+    when: {}
+    do:
+      - type: log
+        msg: "Preset 5: Ready for Takeoff"
+      - type: preset_load
+        preset: 5
+        expedite: 0
+      - type: wait_lvar
+        name: "A32NX_LOAD_AIRCRAFT_PRESET_PROGRESS"
+        op: ">="
+        value: 1.0
+        timeout: 240
+        min_wait: 6
+      - type: input_event
+        name: "LIGHTING_STROBE_0"
+        value: 1
+        mode: set
+      - type: log
+        msg: "Ready for Takeoff ✅ (Strobe AUTO)"
+
+  - id: "next"
+    when: {}
+    do:
+      - type: log
+        msg: "Next: Taxi-out -> Takeoff roll -> Climb/Cruise/Descent -> Approach/Landing -> Taxi-in -> Shutdown."

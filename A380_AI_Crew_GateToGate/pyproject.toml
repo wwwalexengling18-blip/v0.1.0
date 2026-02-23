@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "a380-ai-crew"
+version = "0.1.0"
+description = "Gate-to-gate automation scaffold for FBW A380X (MSFS2024) using SimConnect + A380X Flight Deck API"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pythonnet>=3.0.0",
+  "PyYAML>=6.0",
+  "SimConnect",
+]
+
+[project.scripts]
+a380-ai = "a380_ai_crew.cli:main"
+
+[tool.uv]
+dev-dependencies = [
+  "ruff>=0.6.0",
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

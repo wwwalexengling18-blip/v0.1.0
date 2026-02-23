@@ -1,0 +1,18 @@
+polling:
+  simconnect_hz: 10
+  wasim_hz: 5
+
+timing:
+  # Min-Wartezeiten, damit das Laden/Settling nicht instant wirkt.
+  preset_min_wait_s:
+    cold_dark: 12
+    powered: 10
+    ready_pushback: 8
+    ready_taxi: 6
+    ready_takeoff: 6
+
+safety:
+  max_actions_per_second: 10
+  retry:
+    max_attempts: 3
+    backoff_ms: 250
