@@ -4,118 +4,138 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from a380_ai_crew.core.plan import load_plan
-from a380_ai_crew.core.engine import Engine, Context
-from a380_ai_crew.core.logger import Logger
-from a380_ai_crew.sim.simlayer import SimLayer
+from .core.plan import load_plan
+from .core.engine import Engine, Context
+from .core.logger import Logger
+from .sim.simlayer import SimLayer
+from .tools.diagnose import run_diagnostics
 
-APP_NAME = "A380 AI Crew – Control Center"
+APP = "A380 AI Crew Commander (MSFS2024 + FBW A380X)"
 
-class App(tk.Tk):
+class AppUI(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title(APP_NAME)
-        self.geometry("920x560")
-        self.minsize(860, 520)
+        self.title(APP)
+        self.geometry("980x620")
+        self.minsize(920, 560)
 
-        self.plan_path = tk.StringVar(value=str(Path("src/a380_ai_crew/procedures/g2g.yaml").resolve()))
+        self.plan_path = tk.StringVar(value=str((Path("configs") / "gate_to_gate.yaml").resolve()))
         self.tick = tk.DoubleVar(value=5.0)
 
-        self._worker: threading.Thread | None = None
-
+        self._thread = None
         self._build()
 
     def _build(self):
-        frm = ttk.Frame(self, padding=12)
-        frm.pack(fill="both", expand=True)
+        main = ttk.Frame(self, padding=12)
+        main.pack(fill="both", expand=True)
 
-        ttk.Label(frm, text=APP_NAME, font=("Segoe UI", 14, "bold")).pack(anchor="w")
+        ttk.Label(main, text=APP, font=("Segoe UI", 14, "bold")).pack(anchor="w")
 
-        row = ttk.Frame(frm)
-        row.pack(fill="x", pady=(12, 6))
-        ttk.Label(row, text="Plan (YAML):").pack(side="left")
-        ttk.Entry(row, textvariable=self.plan_path).pack(side="left", fill="x", expand=True, padx=8)
-        ttk.Button(row, text="Durchsuchen…", command=self.browse).pack(side="left")
+        top = ttk.Frame(main)
+        top.pack(fill="x", pady=(10, 6))
+        ttk.Label(top, text="Plan (YAML):").pack(side="left")
+        ttk.Entry(top, textvariable=self.plan_path).pack(side="left", fill="x", expand=True, padx=8)
+        ttk.Button(top, text="Durchsuchen…", command=self._browse).pack(side="left")
 
-        row2 = ttk.Frame(frm)
-        row2.pack(fill="x", pady=(0, 10))
-        ttk.Label(row2, text="Tick (Hz):").pack(side="left")
-        ttk.Entry(row2, textvariable=self.tick, width=8).pack(side="left", padx=8)
-        self.btn_run = ttk.Button(row2, text="Gate‑to‑Gate starten", command=self.run_plan)
-        self.btn_run.pack(side="left", padx=(8,0))
-        ttk.Button(row2, text="Stop (soft)", command=self.soft_stop).pack(side="left", padx=(8,0))
+        bar = ttk.Frame(main)
+        bar.pack(fill="x", pady=(4, 8))
+        ttk.Label(bar, text="Tick (Hz):").pack(side="left")
+        ttk.Entry(bar, textvariable=self.tick, width=8).pack(side="left", padx=8)
 
-        self.status = tk.StringVar(value="Bereit")
-        ttk.Label(frm, textvariable=self.status).pack(anchor="w")
+        self.btn_run = ttk.Button(bar, text="Gate‑to‑Gate starten", command=self._start_run)
+        self.btn_run.pack(side="left", padx=(8, 0))
 
-        self.log = tk.Text(frm, height=18, wrap="word")
-        self.log.pack(fill="both", expand=True, pady=(10,0))
-        self._log("Bereit. Starte MSFS 2024, lade FBW A380X, dann klicke Start.\n")
+        ttk.Button(bar, text="Diagnose", command=self._diag).pack(side="left", padx=8)
+        ttk.Button(bar, text="Logs öffnen", command=self._open_logs).pack(side="left")
+
+        self.state = tk.StringVar(value="Bereit")
+        ttk.Label(main, textvariable=self.state).pack(anchor="w")
+
+        self.prog = ttk.Progressbar(main, mode="indeterminate")
+        self.prog.pack(fill="x", pady=(6, 6))
+
+        self.txt = tk.Text(main, height=22, wrap="word")
+        self.txt.pack(fill="both", expand=True)
+        self._log("Bereit. Starte MSFS 2024, lade FBW A380X, dann Start.\n")
 
     def _log(self, s: str):
-        self.log.insert("end", s + ("\n" if not s.endswith("\n") else ""))
-        self.log.see("end")
+        self.txt.insert("end", s + ("" if s.endswith("\n") else "\n"))
+        self.txt.see("end")
         self.update_idletasks()
 
-    def browse(self):
+    def _browse(self):
         p = filedialog.askopenfilename(title="Plan wählen", filetypes=[("YAML", "*.yaml *.yml"), ("All", "*.*")])
         if p:
             self.plan_path.set(p)
 
-    def run_plan(self):
-        if self._worker and self._worker.is_alive():
+    def _open_logs(self):
+        try:
+            logs = Path("logs").resolve()
+            logs.mkdir(exist_ok=True)
+            import os
+            os.startfile(str(logs))
+        except Exception as e:
+            messagebox.showerror("Logs", str(e))
+
+    def _diag(self):
+        logs = Path("logs").resolve()
+        logs.mkdir(exist_ok=True)
+        logger = Logger(path=logs / "crew_journal.md", jsonl_path=logs / "machine_log.jsonl")
+        run_diagnostics(root=Path(".").resolve(), logger=logger)
+        self._log("Diagnose geschrieben in logs/crew_journal.md")
+
+    def _start_run(self):
+        if self._thread and self._thread.is_alive():
             return
         self.btn_run.configure(state="disabled")
-        self.status.set("Läuft…")
-        self._worker = threading.Thread(target=self._run_worker, daemon=True)
-        self._worker.start()
-        self.after(250, self._poll)
+        self.state.set("Läuft…")
+        self.prog.start(10)
+        self._thread = threading.Thread(target=self._worker, daemon=True)
+        self._thread.start()
+        self.after(200, self._poll)
 
     def _poll(self):
-        if self._worker and self._worker.is_alive():
-            self.after(250, self._poll)
+        if self._thread and self._thread.is_alive():
+            self.after(200, self._poll)
             return
+        self.prog.stop()
         self.btn_run.configure(state="normal")
-        self.status.set("Fertig ✅")
+        if self.state.get() == "Läuft…":
+            self.state.set("Fertig ✅")
 
-    def soft_stop(self):
-        messagebox.showinfo("Stop", "Soft-Stop kommt als nächster Ausbau (State Machine Abort).")
-
-    def _run_worker(self):
+    def _worker(self):
         try:
             root = Path(".").resolve()
-            log_path = root / "logs" / "g2g_gui.log"
-            logger = Logger(path=log_path)
-            self._log(f"Log: {log_path}")
+            logs = root / "logs"
+            logs.mkdir(exist_ok=True)
+            logger = Logger(path=logs / "crew_journal.md", jsonl_path=logs / "machine_log.jsonl")
 
-            sim = SimLayer(base_dir=root)
-            self._log("Connecting SimConnect…")
+            orig = logger.log
+            def both(msg, role="SYSTEM", step=None, level="INFO", data=None):
+                orig(msg, role=role, step=step, level=level, data=data)
+                self.after(0, lambda: self._log(f"[{level}] [{role}] {msg}"))
+            logger.log = both  # type: ignore
+
+            sim = SimLayer(base_dir=root, logger=logger)
+            logger.log("Connect SimConnect…", role="SYSTEM")
             sim.connect()
-            self._log("SimConnect OK.")
 
             plan = load_plan(Path(self.plan_path.get()))
             ctx = Context(sim=sim, log=logger)
-
-            # Mirror logger output to GUI by wrapping
-            orig_log = logger.log
-            def both(msg: str):
-                orig_log(msg)
-                self.after(0, lambda: self._log(msg))
-            logger.log = both  # type: ignore
-
             Engine(plan=plan, ctx=ctx).run(tick_hz=float(self.tick.get()))
+            self.after(0, lambda: self.state.set("Fertig ✅"))
         except Exception as e:
-            self.after(0, lambda: (self.status.set("Fehler ❌"), self._log(f"ERROR: {e}")))
+            self.after(0, lambda: self.state.set("Fehler ❌"))
+            self.after(0, lambda: self._log(f"ERROR: {e}"))
 
 def main():
-    app = App()
     try:
         style = ttk.Style()
         if "vista" in style.theme_names():
             style.theme_use("vista")
     except Exception:
         pass
-    app.mainloop()
+    AppUI().mainloop()
 
 if __name__ == "__main__":
     main()

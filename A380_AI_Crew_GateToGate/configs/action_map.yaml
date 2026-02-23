@@ -1,0 +1,26 @@
+version: 1
+actions:
+  load_aircraft_preset:
+    type: lvar_write
+    lvar_candidates: ["A32NX_LOAD_AIRCRAFT_PRESET", "A32NX_AIRCRAFT_PRESET_LOAD"]
+    role: PM
+
+  preset_progress:
+    type: lvar_read
+    lvar_candidates: ["A32NX_LOAD_AIRCRAFT_PRESET_PROGRESS", "A32NX_AIRCRAFT_PRESET_LOAD_PROGRESS"]
+    role: PM
+
+  pushback_enable:
+    type: lvar_write
+    lvar_candidates: ["A32NX_PUSHBACK_SYSTEM_ENABLED"]
+    role: PM
+
+  beacon_on:
+    type: simconnect_event
+    event: "TOGGLE_BEACON_LIGHTS"
+    role: PM
+
+  parking_brake_toggle:
+    type: simconnect_event
+    event: "PARKING_BRAKES"
+    role: PF
